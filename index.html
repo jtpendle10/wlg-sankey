@@ -79,7 +79,7 @@
         }
       );
       const json = await resp.json();
-      const nodes = json?.dataPoint?.data?.nodes || [];
+      const nodes = json?.data?.dataPoint?.data?.nodes || [];
       return nodes.length ? nodes[0].data : 0;
     }
 

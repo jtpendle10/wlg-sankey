@@ -97,10 +97,12 @@
           };
         })
       );
+      console.log("••• raw results array •••", results);
 
       // 2.2 Identify “Main Electric” and “Main Gas”
       const mainElectric = results.find(r => r.system === "Main Electric")?.value || 0;
       const mainGas      = results.find(r => r.system === "Main Gas")?.value || 0;
+      console.log("Main Electric =", mainElectric, ", Main Gas =", mainGas);
 
       // 2.3 Filter downstream children (excluding the mains themselves)
       const electricChildren = results

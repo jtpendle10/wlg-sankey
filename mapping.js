@@ -4,6 +4,7 @@ const sankeyMapping = [
   { system: "Chilled Water Systems2",    source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-chws-electric-demand.virtual" },
   { system: "Compressed Air Systems",    source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-cps-electric-demand.virtual" },
   { system: "Air Dryer",                 source: "electric", dataSourceName: "WLG-EM5-MCC2-ELM2-2",              metricName: "MCC2_ELM2-2_Airdryer1_Ps6_kW" },
+  { system: "Other Process Energy Use",  source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-opes-electricity-demand.virtual" },
   { system: "Air Compressor",            source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-ac-electric-demand.virtual" },
   { system: "Main Electric",             source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-mes-electricity-demand.virtual" },
   { system: "Main Gas",                  source: "gas",      dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-mgs-gas-demand.virtual" },
@@ -11,6 +12,5 @@ const sankeyMapping = [
   { system: "Steam",                     source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-ss-electric-demand.virtual" },
   { system: "Steam",                     source: "gas",      dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-ss-gas-demand.virtual" },
   { system: "DWR L12",                   source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-dwrl12-electric-demand.virtual" },
-  { system: "DWR L12",                   source: "gas",      dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-dwrl12-gas-demand.virtual" },
-  { system: "Other Process Energy Use",  source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-opes-electricity-demand.virtual" }
+  { system: "DWR L12",                   source: "gas",      dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-dwrl12-gas-demand.virtual" }
 ];

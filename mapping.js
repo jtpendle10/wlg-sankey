@@ -1,7 +1,7 @@
 // mapping.js
 
 const sankeyMapping = [
-  { system: "Chilled Water Systems",    source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-chws-electric-demand.virtual" },
+  { system: "Chilled Water Systems2",    source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-chws-electric-demand.virtual" },
   { system: "Compressed Air Systems",    source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-cps-electric-demand.virtual" },
   { system: "Air Dryer",                 source: "electric", dataSourceName: "WLG-EM5-MCC2-ELM2-2",              metricName: "MCC2_ELM2-2_Airdryer1_Ps6_kW" },
   { system: "Air Compressor",            source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-ac-electric-demand.virtual" },

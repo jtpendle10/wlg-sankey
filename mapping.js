@@ -9,8 +9,8 @@ const sankeyMapping = [
   { system: "Main Gas",                  source: "gas",      dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-mgs-gas-demand.virtual" },
   { system: "Other",                     source: "electric", dataSourceName: "WLG-EM5-BusDuct3-ELM52",         metricName: "BusDuct3_ELM52_BusDuct3_Real_Power" },
   { system: "Steam",                     source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-ss-electric-demand.virtual" },
-  { system: "steam",                     source: "gas",      dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-ss-gas-demand.virtual" },
+  { system: "Steam",                     source: "gas",      dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-ss-gas-demand.virtual" },
   { system: "DWR L12",                   source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-dwrl12-electric-demand.virtual" },
-  { system: "DWR L13",                   source: "gas",      dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-dwrl12-gas-demand.virtual" },
+  { system: "DWR L12",                   source: "gas",      dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-dwrl12-gas-demand.virtual" },
   { system: "Other Process Energy Use",  source: "electric", dataSourceName: "WLG-EM5-Calculated_Fields", metricName: "total-opes-electricity-demand.virtual" }
 ];

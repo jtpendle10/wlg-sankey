@@ -45,9 +45,7 @@
                 $aggregation: MetricDataAggregationMethod!, $window: String!,
                 $samplingWindow: String, $last: Int) {
             dataPoint(dataSourceName: $dataSourceName, name: $name) {
-            nodes {
             name
-            }
               data(from: $from, to: $to,
                    aggregation: $aggregation, window: $window,
                    samplingWindow: $samplingWindow, last: $last) {

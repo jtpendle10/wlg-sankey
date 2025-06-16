@@ -34,18 +34,21 @@
     async function fetchMetric(mappingEntry) {
       const { dataSourceName, metricName } = mappingEntry;
 
-      // (a) Adjust the date/time window as needed. Here: June 6, 2025.
-      const from = "2025-06-06T00:00:00";
-      const to   = "2025-06-06T23:59:59";
+      // dynamically compute last 24 hours
+      const to   = new Date();
+      const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
 
-      // Build the same GraphQL query payload
+      // convert to ISO strings
+      const fromISO = from.toISOString();
+      const toISO   = to.toISOString();
+
       const graphqlBody = {
         query: `
           query($dataSourceName: String!, $name: String!, $from: String!, $to: String!,
                 $aggregation: MetricDataAggregationMethod!, $window: String!,
                 $samplingWindow: String, $last: Int) {
             dataPoint(dataSourceName: $dataSourceName, name: $name) {
-            name
+              name
               data(from: $from, to: $to,
                    aggregation: $aggregation, window: $window,
                    samplingWindow: $samplingWindow, last: $last) {
@@ -60,8 +63,8 @@
         variables: {
           dataSourceName: dataSourceName,
           name:           metricName,
-          from:           from,
-          to:             to,
+          from:           fromISO,
+          to:             toISO,
           aggregation:    "LAST",
           window:         "1 minute",
           samplingWindow: "1 minute",
@@ -69,7 +72,6 @@
         }
       };
 
-      // ←– NOTE: We now POST to our Render proxy’s /api/graphql
       const resp = await fetch(
         'https://sankey-proxy.onrender.com/api/graphql',
         {
@@ -83,89 +85,56 @@
       return nodes.length ? nodes[0].data : 0;
     }
 
-    // ─── 2. Build & Draw Highcharts Sankey ────────────────────────────────────
+    // ─── 2. Build & Draw Highcharts Sankey (unchanged) ─────────────────────────
 
     async function drawHighchartsSankey() {
-      // 2.1 Fetch all metrics in parallel, via the proxy
       const results = await Promise.all(
-        sankeyMapping.map(async entry => {
-          const value = await fetchMetric(entry);
-          return {
-            system: entry.system,
-            source: entry.source,
-            value:  value
-          };
-        })
+        sankeyMapping.map(async entry => ({
+          system: entry.system,
+          source: entry.source,
+          value:  await fetchMetric(entry)
+        }))
       );
-      console.log("••• raw results array •••", results);
 
-      // 2.2 Identify “Main Electric” and “Main Gas”
       const mainElectric = results.find(r => r.system === "Main Electric")?.value || 0;
       const mainGas      = results.find(r => r.system === "Main Gas")?.value || 0;
-      console.log("Main Electric =", mainElectric, ", Main Gas =", mainGas);
 
-      // 2.3 Filter downstream children (excluding the mains themselves)
       const electricChildren = results
         .filter(r => r.source === "electric" && r.system !== "Main Electric");
       const gasChildren = results
         .filter(r => r.source === "gas" && r.system !== "Main Gas");
 
-      // 2.4 Sum downstream values
       const sumElectricChildren = electricChildren.reduce((sum, e) => sum + e.value, 0);
       const sumGasChildren      = gasChildren.reduce((sum, e) => sum + e.value, 0);
 
-      // 2.5 Compute “Non‐Submetered” remainders
       const nonSubElectric = Math.max(mainElectric - sumElectricChildren, 0);
       const nonSubGas      = Math.max(mainGas - sumGasChildren, 0);
 
-      // 2.6 Assemble Highcharts‐format data: [from, to, weight]
       const sankeyData = [];
+      electricChildren.forEach(c => sankeyData.push([ "Main Electric", c.system, c.value ]));
+      if (nonSubElectric > 0) sankeyData.push([ "Main Electric", "Non-Submetered Electric", nonSubElectric ]);
+      gasChildren.forEach(c => sankeyData.push([ "Main Gas", c.system, c.value ]));
+      if (nonSubGas > 0)      sankeyData.push([ "Main Gas", "Non-Submetered Gas", nonSubGas ]);
 
-      // Electric flows
-      electricChildren.forEach(child => {
-        sankeyData.push([ "Main Electric", child.system, child.value ]);
-      });
-      if (nonSubElectric > 0) {
-        sankeyData.push([ "Main Electric", "Non-Submetered Electric", nonSubElectric ]);
-      }
-
-      // Gas flows
-      gasChildren.forEach(child => {
-        sankeyData.push([ "Main Gas", child.system, child.value ]);
-      });
-      if (nonSubGas > 0) {
-        sankeyData.push([ "Main Gas", "Non-Submetered Gas", nonSubGas ]);
-      }
-
-      // 2.7 Draw the Highcharts Sankey
       Highcharts.chart('sankey_div', {
         chart: { type: 'sankey' },
-        title: { text: 'Gore Facility Energy Flow (Electric & Gas)' },
+        title: { text: 'Gore Facility Energy Flow (Last 24 Hours)' },
         series: [{
-          keys: ['from', 'to', 'weight'],
+          keys: ['from','to','weight'],
           nodes: [
-            {
-              id: 'Main Electric',
-             color: '#ffa500'
-            },
-            {
-              id: 'Main Gas',
-              color: '#1a8dff'
-            }
-            ], 
+            { id: 'Main Electric', color: '#ffa500' },
+            { id: 'Main Gas',      color: '#1a8dff' }
+          ],
           data: sankeyData,
           name: 'Energy Flow'
         }],
         tooltip: {
           pointFormat: '{point.from} → {point.to}: <b>{point.weight:.1f} kW</b>'
         },
-        credits: {
-          enabled: false
-        }
+        credits: { enabled: false }
       });
     }
 
-    // 2.8 Launch once DOM is ready
     document.addEventListener('DOMContentLoaded', drawHighchartsSankey);
   </script>
 </body>

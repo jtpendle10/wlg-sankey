@@ -143,6 +143,16 @@
         title: { text: 'Gore Facility Energy Flow (Electric & Gas)' },
         series: [{
           keys: ['from', 'to', 'weight'],
+          nodes: [
+            {
+              id: 'Main Electric',
+             color: '#ffa500'
+            },
+            {
+              id: 'Main Gas',
+              color: '#1a8dff'
+            }
+            ] 
           data: sankeyData,
           name: 'Energy Flow'
         }],

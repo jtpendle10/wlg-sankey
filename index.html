@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Gore Facility Energy Sankey (Highcharts + Render Proxy)</title>
+  <title>Gore Facility Energy Sankey (Last 24h)</title>
 
-  <!-- 1. Load Highcharts core + Sankey module -->
+  <!-- Highcharts + Sankey -->
   <script src="https://code.highcharts.com/highcharts.js"></script>
   <script src="https://code.highcharts.com/modules/sankey.js"></script>
 
-  <!-- 2. Load our mapping data (unchanged) -->
+  <!-- Your mapping -->
   <script src="mapping.js"></script>
 
   <style>
@@ -16,29 +16,54 @@
       font-family: Arial, sans-serif;
       margin: 2rem;
     }
-    #sankey_div {
+
+    /* Wrapper around the chart to allow absolute-positioned timestamp */
+    #chart-wrapper {
+      position: relative;
       width: 100%;
       max-width: 900px;
       height: 550px;
       margin: 0 auto;
     }
+
+    /* The actual Highcharts container fills the wrapper */
+    #sankey_div {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Last-updated label in bottom-right */
+    #last-updated {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-size: 12px;
+      color: #666;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 2px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    h2 {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <h2>Gore Facility Energy Flow (Electric &amp; Gas Mains)</h2>
-  <div id="sankey_div">Loading chart…</div>
+  <h2>Gore Facility Energy Flow (Last 24 Hours)</h2>
+
+  <div id="chart-wrapper">
+    <div id="sankey_div">Loading chart…</div>
+    <div id="last-updated">Last updated: --</div>
+  </div>
 
   <script>
-    // ─── 1. PROXY‐BASED GraphQL Fetch Helper ──────────────────────────────────
-
+    // Fetch a single metric, last data point in the past 24 hours
     async function fetchMetric(mappingEntry) {
       const { dataSourceName, metricName } = mappingEntry;
-
-      // dynamically compute last 24 hours
       const to   = new Date();
       const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
-
-      // convert to ISO strings
       const fromISO = from.toISOString();
       const toISO   = to.toISOString();
 
@@ -48,14 +73,10 @@
                 $aggregation: MetricDataAggregationMethod!, $window: String!,
                 $samplingWindow: String, $last: Int) {
             dataPoint(dataSourceName: $dataSourceName, name: $name) {
-              name
               data(from: $from, to: $to,
                    aggregation: $aggregation, window: $window,
                    samplingWindow: $samplingWindow, last: $last) {
-                nodes {
-                  time
-                  data
-                }
+                nodes { time data }
               }
             }
           }
@@ -85,8 +106,7 @@
       return nodes.length ? nodes[0].data : 0;
     }
 
-    // ─── 2. Build & Draw Highcharts Sankey (unchanged) ─────────────────────────
-
+    // Build & draw the Sankey, then stamp the last-updated time
     async function drawHighchartsSankey() {
       const results = await Promise.all(
         sankeyMapping.map(async entry => ({
@@ -96,29 +116,33 @@
         }))
       );
 
+      // Stamp the last-updated
+      document.getElementById('last-updated').textContent =
+        'Last updated: ' + new Date().toLocaleString();
+
+      // Compute main & children flows
       const mainElectric = results.find(r => r.system === "Main Electric")?.value || 0;
       const mainGas      = results.find(r => r.system === "Main Gas")?.value || 0;
 
-      const electricChildren = results
-        .filter(r => r.source === "electric" && r.system !== "Main Electric");
-      const gasChildren = results
-        .filter(r => r.source === "gas" && r.system !== "Main Gas");
+      const electricChildren = results.filter(r => r.source === "electric" && r.system !== "Main Electric");
+      const gasChildren      = results.filter(r => r.source === "gas"     && r.system !== "Main Gas");
 
-      const sumElectricChildren = electricChildren.reduce((sum, e) => sum + e.value, 0);
-      const sumGasChildren      = gasChildren.reduce((sum, e) => sum + e.value, 0);
+      const sumElec  = electricChildren.reduce((sum,e) => sum + e.value, 0);
+      const sumGas   = gasChildren.reduce((sum,e)  => sum + e.value, 0);
+      const nonSubEl = Math.max(mainElectric - sumElec, 0);
+      const nonSubGa = Math.max(mainGas      - sumGas,  0);
 
-      const nonSubElectric = Math.max(mainElectric - sumElectricChildren, 0);
-      const nonSubGas      = Math.max(mainGas - sumGasChildren, 0);
-
+      // Assemble Sankey data
       const sankeyData = [];
-      electricChildren.forEach(c => sankeyData.push([ "Main Electric", c.system, c.value ]));
-      if (nonSubElectric > 0) sankeyData.push([ "Main Electric", "Non-Submetered Electric", nonSubElectric ]);
-      gasChildren.forEach(c => sankeyData.push([ "Main Gas", c.system, c.value ]));
-      if (nonSubGas > 0)      sankeyData.push([ "Main Gas", "Non-Submetered Gas", nonSubGas ]);
+      electricChildren.forEach(c => sankeyData.push(["Main Electric", c.system, c.value]));
+      if (nonSubEl > 0) sankeyData.push(["Main Electric", "Non-Submetered Electric", nonSubEl]);
+      gasChildren.forEach(c => sankeyData.push(["Main Gas", c.system, c.value]));
+      if (nonSubGa > 0) sankeyData.push(["Main Gas", "Non-Submetered Gas", nonSubGa]);
 
+      // Render
       Highcharts.chart('sankey_div', {
         chart: { type: 'sankey' },
-        title: { text: 'Gore Facility Energy Flow (Last 24 Hours)' },
+        title: { text: '' }, // title is in the <h2>
         series: [{
           keys: ['from','to','weight'],
           nodes: [

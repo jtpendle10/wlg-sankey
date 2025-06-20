@@ -85,14 +85,11 @@
         }
       };
 
-      const resp = await fetch(
-        'https://sankey-proxy.onrender.com/api/graphql',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(graphqlBody)
-        }
-      );
+      const resp = await fetch('https://sankey-proxy.onrender.com/api/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(graphqlBody)
+      });
       const json = await resp.json();
       const nodes = json?.data?.dataPoint?.data?.nodes || [];
       return nodes.length ? nodes[0].data : 0;
@@ -107,53 +104,38 @@
         }))
       );
 
-      // Stamp the last-updated
       document.getElementById('last-updated').textContent =
         'Last updated: ' + new Date().toLocaleString();
 
-      // Compute mains
       const mainElectric = results.find(r => r.system === "Main Electric")?.value || 0;
       const mainGas      = results.find(r => r.system === "Main Gas")?.value || 0;
-
-      // Compute children
       const electricChildren = results.filter(r => r.source === "electric" && r.system !== "Main Electric");
       const gasChildren      = results.filter(r => r.source === "gas"     && r.system !== "Main Gas");
-
-      // Sums
       const sumElec  = electricChildren.reduce((sum,e) => sum + e.value, 0);
       const sumGas   = gasChildren.reduce((sum,e)  => sum + e.value, 0);
       const nonSubEl = Math.max(mainElectric - sumElec, 0);
       const nonSubGa = Math.max(mainGas      - sumGas,  0);
-
-      // New left‐layer: Total Demand
       const totalDemand = mainElectric + mainGas;
 
-      // Build the Sankey data
       const sankeyData = [];
-
-      // 1) Total Demand → Mains
       sankeyData.push(
         ["Total Demand", "Main Electric", mainElectric],
         ["Total Demand", "Main Gas",      mainGas]
       );
-
-      // 2) Mains → Children
       electricChildren.forEach(c => sankeyData.push(["Main Electric", c.system, c.value]));
       if (nonSubEl > 0) sankeyData.push(["Main Electric", "Non-Submetered Electric", nonSubEl]);
-
       gasChildren.forEach(c => sankeyData.push(["Main Gas", c.system, c.value]));
       if (nonSubGa > 0) sankeyData.push(["Main Gas", "Non-Submetered Gas", nonSubGa]);
 
-      // Render
       Highcharts.chart('sankey_div', {
         chart: { type: 'sankey' },
         title: { text: '' },
         series: [{
           keys: ['from','to','weight'],
           nodes: [
-            { id: 'Total Demand',       color: '#666666' },
-            { id: 'Main Electric',      color: '#ffa500' },
-            { id: 'Main Gas',           color: '#1a8dff' }
+            { id: 'Total Demand',  color: '#666666' },
+            { id: 'Main Electric', color: '#ffa500' },
+            { id: 'Main Gas',      color: '#1a8dff' }
           ],
           data: sankeyData,
           name: 'Energy Flow'

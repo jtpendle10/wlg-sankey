@@ -16,8 +16,6 @@
       font-family: Arial, sans-serif;
       margin: 2rem;
     }
-
-    /* Wrapper around the chart to allow absolute-positioned timestamp */
     #chart-wrapper {
       position: relative;
       width: 100%;
@@ -25,14 +23,10 @@
       height: 550px;
       margin: 0 auto;
     }
-
-    /* The actual Highcharts container fills the wrapper */
     #sankey_div {
       width: 100%;
       height: 100%;
     }
-
-    /* Last-updated label in bottom-right */
     #last-updated {
       position: absolute;
       bottom: 8px;
@@ -44,7 +38,6 @@
       border-radius: 4px;
       pointer-events: none;
     }
-
     h2 {
       text-align: center;
     }
@@ -59,7 +52,6 @@
   </div>
 
   <script>
-    // Fetch a single metric, last data point in the past 24 hours
     async function fetchMetric(mappingEntry) {
       const { dataSourceName, metricName } = mappingEntry;
       const to   = new Date();
@@ -106,7 +98,6 @@
       return nodes.length ? nodes[0].data : 0;
     }
 
-    // Build & draw the Sankey, then stamp the last-updated time
     async function drawHighchartsSankey() {
       const results = await Promise.all(
         sankeyMapping.map(async entry => ({
@@ -120,34 +111,49 @@
       document.getElementById('last-updated').textContent =
         'Last updated: ' + new Date().toLocaleString();
 
-      // Compute main & children flows
+      // Compute mains
       const mainElectric = results.find(r => r.system === "Main Electric")?.value || 0;
       const mainGas      = results.find(r => r.system === "Main Gas")?.value || 0;
 
+      // Compute children
       const electricChildren = results.filter(r => r.source === "electric" && r.system !== "Main Electric");
       const gasChildren      = results.filter(r => r.source === "gas"     && r.system !== "Main Gas");
 
+      // Sums
       const sumElec  = electricChildren.reduce((sum,e) => sum + e.value, 0);
       const sumGas   = gasChildren.reduce((sum,e)  => sum + e.value, 0);
       const nonSubEl = Math.max(mainElectric - sumElec, 0);
       const nonSubGa = Math.max(mainGas      - sumGas,  0);
 
-      // Assemble Sankey data
+      // New left‐layer: Total Demand
+      const totalDemand = mainElectric + mainGas;
+
+      // Build the Sankey data
       const sankeyData = [];
+
+      // 1) Total Demand → Mains
+      sankeyData.push(
+        ["Total Demand", "Main Electric", mainElectric],
+        ["Total Demand", "Main Gas",      mainGas]
+      );
+
+      // 2) Mains → Children
       electricChildren.forEach(c => sankeyData.push(["Main Electric", c.system, c.value]));
       if (nonSubEl > 0) sankeyData.push(["Main Electric", "Non-Submetered Electric", nonSubEl]);
+
       gasChildren.forEach(c => sankeyData.push(["Main Gas", c.system, c.value]));
       if (nonSubGa > 0) sankeyData.push(["Main Gas", "Non-Submetered Gas", nonSubGa]);
 
       // Render
       Highcharts.chart('sankey_div', {
         chart: { type: 'sankey' },
-        title: { text: '' }, // title is in the <h2>
+        title: { text: '' },
         series: [{
           keys: ['from','to','weight'],
           nodes: [
-            { id: 'Main Electric', color: '#ffa500' },
-            { id: 'Main Gas',      color: '#1a8dff' }
+            { id: 'Total Demand',       color: '#666666' },
+            { id: 'Main Electric',      color: '#ffa500' },
+            { id: 'Main Gas',           color: '#1a8dff' }
           ],
           data: sankeyData,
           name: 'Energy Flow'
